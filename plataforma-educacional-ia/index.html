@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plataforma Educacional com IA — MVP</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Space Grotesk",system-ui,sans-serif;color:#E8ECF8;background:radial-gradient(900px 500px at 85% -10%,rgba(124,92,255,.35),transparent 60%),radial-gradient(700px 500px at -10% 110%,rgba(34,211,238,.2),transparent 60%),#0A0E1F;background-attachment:fixed}
+main{max-width:940px;margin:0 auto;padding:18px 16px 60px;display:flex;flex-direction:column;gap:14px}
+.bx{border:1px solid rgba(160,180,255,.22);background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+h1,h2,h3,p{margin:0}h1{font-size:24px}h2{font-size:18px}h3{font-size:15px}
+.mut{color:#A9B4D6;font-size:13px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.g{flex:1;min-width:130px}
+.tab,.btn,.btn2{font-family:inherit;font-size:15px;min-height:44px;border-radius:12px;padding:10px 16px;cursor:pointer}
+.tab{border:1px solid transparent;background:none;color:#C9D2F0}.tab.on{background:rgba(124,92,255,.25);border-color:rgba(139,123,255,.6);color:#fff;font-weight:700}
+.btn{border:0;background:linear-gradient(90deg,#8B7BFF,#22D3EE);color:#0A0E1F;font-weight:700}
+.btn2{border:1px solid rgba(34,211,238,.6);background:rgba(34,211,238,.08);color:#B8F3FF}
+button:disabled{opacity:.5;cursor:wait}
+input[type=text],input[type=password],textarea,select{width:100%;font-family:inherit;font-size:15px;color:#E8ECF8;background:#141A33;border:1px solid rgba(160,180,255,.3);border-radius:10px;padding:10px;min-height:44px}
+textarea{min-height:110px;resize:vertical}
+input[type=radio]{accent-color:#22D3EE;width:18px;height:18px}
+.chip{border:1px solid rgba(34,211,238,.5);border-radius:99px;padding:3px 10px;font-size:11px;background:rgba(34,211,238,.1);color:#B8F3FF;font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+.bar{height:10px;background:rgba(255,255,255,.1);border-radius:6px;flex:2;min-width:90px}.bar i{display:block;height:10px;background:linear-gradient(90deg,#7C5CFF,#22D3EE);border-radius:6px;box-shadow:0 0 12px rgba(34,211,238,.6)}
+.opt{display:flex;gap:10px;align-items:center;padding:6px 0}
+.err{color:#FFB4B4;font-size:14px}.kpi{font-size:28px;font-weight:700}
+.rk{display:grid;grid-template-columns:28px 1.6fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:8px 0;border-top:1px solid rgba(160,180,255,.15);font-size:14px}
+.oc{display:flex;gap:12px;align-items:center;padding:14px;border:1.5px solid rgba(160,180,255,.3);border-radius:14px;cursor:pointer;min-height:52px;background:rgba(255,255,255,.04)}
+.oc.sel{border-color:#22D3EE;background:rgba(34,211,238,.12)}.oc.good{border-color:#34D399;background:rgba(52,211,153,.12)}.oc.wrong{border-color:#FB7185;background:rgba(251,113,133,.1)}
+.fb{border-radius:14px;padding:14px;font-weight:700}.fb.ok{background:rgba(52,211,153,.16);border:1px solid #34D399;color:#A7F3D0}.fb.bad{background:rgba(251,113,133,.14);border:1px solid #FB7185;color:#FECDD3}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CL={'6A':{n:'6º A',se:'6º ano'},'7B':{n:'7º B',se:'7º ano'},'8A':{n:'8º A',se:'8º ano'},'9C':{n:'9º C',se:'9º ano'},'1A':{n:'1º A EM',se:'1º ano EM'}};
+const DISC=['Matemática','Português','Ciências','História','Geografia','Inglês'];
+const U=[{r:'prof',id:'PROF01',pin:'1234',name:'Profª Marina'},{r:'prof',id:'PROF02',pin:'5678',name:'Prof. Carlos'},{r:'alu',id:'A1001',pin:'1111',name:'Aluno A1001',c:'7B'},{r:'alu',id:'A1002',pin:'2222',name:'Aluno A1002',c:'7B'},{r:'coord',id:'COORD',pin:'9999',name:'Coordenação'}];
+const SEEDV=[['PROF01','7B','Matemática'],['PROF01','7B','Ciências'],['PROF01','8A','Ciências'],['PROF02','7B','Português'],['PROF02','9C','Português'],['PROF02','1A','Matemática']].map((x,i)=>({id:i+1,p:x[0],c:x[1],s:x[2]}));
+const SEED={'7B|Matemática':[31,58,{'Frações equivalentes':[26,31],'Comparar frações':[20,31],'Operações com frações':[13,31]}],'7B|Ciências':[31,62,{'Ecossistemas':[19,31],'Cadeia alimentar':[24,31]}],'7B|Português':[31,52,{'Interpretação de texto':[17,31],'Pontuação':[12,31]}],'8A|Ciências':[30,66,{'Células':[22,30],'Fotossíntese':[15,30]}],'9C|Português':[28,49,{'Interpretação de texto':[18,28],'Concordância verbal':[12,28]}],'1A|Matemática':[33,55,{'Funções afins':[14,33],'Equações do 2º grau':[20,33]}]};
+const PREV={};Object.entries(SEED).forEach(([k,v])=>PREV[k]=v[1]);
+const fresh=()=>({q:{},d:{},res:Object.entries(SEED).map(([k,v])=>({k,s:v[2],seed:v[0]})),doubts:[],v:SEEDV.map(x=>({...x})),nid:20});
+let S=fresh(),me=null,pf={},cf={se:'',c:'',s:''},lrole='prof',stu={D:{}},busy='',err='',sample=null;
+try{const j=JSON.parse(localStorage.getItem('edu3')||'null');if(j)S=Object.assign(S,j)}catch(e){}
+const save=()=>{try{localStorage.setItem('edu3',JSON.stringify(S))}catch(e){}};
+if(window.claude)claude.use('sample').then(s=>{sample=s;render()});
+const fmt='Responda SOMENTE com JSON válido, sem texto extra.';
+const qfmt='"questions":[{"skill":"habilidade curta","q":"enunciado","options":["A","B","C","D"],"answer":0}]';
+const valid=qs=>Array.isArray(qs)&&qs.length&&qs.every(x=>x.q&&Array.isArray(x.options)&&x.options.length>=2&&Number.isInteger(x.answer));
+const API_URL='COLE_AQUI_A_URL_DO_SEU_WORKER';
+const hasApi=()=>API_URL.startsWith('https://');
+async function ai(p){
+  if(hasApi()){
+    const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});
+    if(!r.ok)throw new Error('A IA não respondeu ('+r.status+'). Tente de novo.');
+    const j=await r.json(),m=String(j.text||'').replace(/```json|```/g,'').trim();
+    try{return JSON.parse(m)}catch(e){throw new Error('Resposta da IA fora do formato. Tente de novo.')}
+  }
+  if(!sample)throw new Error('IA não configurada: coloque a URL do Worker em API_URL no código.');
+  return sample.json(p,{modelTier:'quick',cache:false});
+}
+async function run(l,fn){busy=l;err='';render();try{await fn()}catch(e){err=(e&&e.message)||'A IA não respondeu. Tente de novo.'}busy='';render()}
+const kn=k=>{const[c,s]=k.split('|');return `${CL[c].n} · ${s}`};
+const pname=id=>(U.find(u=>u.id===id)||{}).name||id;
+const sel=(id,opts,val,lbl)=>`<div class="g"><label class="mut" for="${id}">${lbl}</label><select id="${id}">${opts.map(([v,t])=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(t)}</option>`).join('')}</select></div>`;
+
+function agg(k){const a={};let ok=0,t=0,n=0;S.res.filter(r=>r.k===k).forEach(r=>{n+=r.seed||(r.q?1:0);Object.entries(r.s).forEach(([sk,v])=>{const x=a[sk]||(a[sk]=[0,0]);x[0]+=v[0];x[1]+=v[1];ok+=v[0];t+=v[1]})});return{a,n,p:t?Math.round(ok/t*100):null}}
+const lab=p=>p>=70?'dominada':p>=50?'atenção':'reforçar';
+const skillRows=a=>Object.keys(a).length?Object.entries(a).map(([k,[x,y]])=>{const p=y?Math.round(x/y*100):0;return `<div class="row"><p class="g">${esc(k)}</p><div class="bar"><i style="width:${p}%"></i></div><span class="chip">${p}% · ${lab(p)}</span></div>`}).join(''):'<p class="mut">Ainda sem respostas.</p>';
+
+function login(){
+  const id=$('#lid').value.trim().toUpperCase(),pin=$('#lpin').value.trim();
+  const u=U.find(x=>x.r===lrole&&x.id===id&&x.pin===pin);
+  if(!u){err='Código ou PIN incorreto.';return render()}
+  me=u;pf={};stu={D:{}};err='';render();
+}
+function genQuiz(k){
+  const plan=$('#plan').value.trim();
+  if(!plan){err='Cole o planejamento da semana.';return render()}
+  const[c,s]=k.split('|');
+  run('Gerando questionário…',async()=>{
+    const r=await ai(`Você é um assistente pedagógico para a rede pública brasileira. Crie 5 questões de múltipla escolha (4 alternativas, só uma correta) para a turma ${CL[c].n} (${CL[c].se}), disciplina ${s}, alinhadas à BNCC e ao planejamento abaixo. Linguagem clara. ${fmt} Formato: {${qfmt}}\nPlanejamento: ${plan}`);
+    if(!valid(r.questions))throw new Error('Resposta da IA fora do formato. Tente de novo.');
+    S.d[k]=r.questions;save();
+  });
+}
+const st=()=>stu.D[stu.o]||(stu.D[stu.o]={});
+function startRun(){st().run={items:S.q[stu.o].map(x=>({x,orig:true})),pos:0,sel:null,fb:null,xp:0,streak:0,wr:[],rec:0,ph:'play'};render()}
+function checkAns(){
+  const r=st().run,it=r.items[r.pos],ok=r.sel===it.x.answer;it.ok=ok;r.fb=ok;
+  if(ok){r.xp+=it.orig?10:5;r.streak++;if(!it.orig)r.rec++}else{r.streak=0;if(it.orig)r.wr.push(it)}
+  render();
+}
+function nextQ(){
+  const r=st().run;r.pos++;r.sel=null;r.fb=null;
+  if(r.pos<r.items.length)return render();
+  if(!r.retried&&r.wr.length){r.retried=true;r.ph='gen';render();return genVariants()}
+  finish();
+}
+function genVariants(){
+  const r=st().run,src=r.wr.map(i=>({skill:i.x.skill,q:i.x.q,options:i.x.options,answer:i.x.answer}));
+  run('Criando versões novas das que você errou…',async()=>{
+    const o=await ai(`Para cada questão abaixo, crie UMA questão nova do mesmo estilo, mesma habilidade e mesmo nível de dificuldade, mas com números, valores ou exemplos DIFERENTES (ex.: 1/2 + 1/4 vira 1/3 + 1/6). Mantenha 4 alternativas, só uma correta, e a mesma ordem das questões. ${fmt} Formato: {${qfmt}}\nQuestões originais: ${JSON.stringify(src)}`);
+    if(!valid(o.questions)||o.questions.length<src.length)throw new Error('Não consegui criar as versões novas. Tente de novo ou pule a revisão.');
+    o.questions.slice(0,src.length).forEach((x,i)=>{x.skill=src[i].skill;r.items.push({x,orig:false})});
+    r.ph='play';
+  });
+}
+function finish(){
+  const d=st(),r=d.run,res={};
+  r.items.filter(i=>i.orig).forEach(i=>{const a=res[i.x.skill]||(res[i.x.skill]=[0,0]);a[1]++;if(i.ok)a[0]++});
+  r.items.filter(i=>!i.orig&&i.ok).forEach(i=>{const a=res[i.x.skill];if(a)a[0]=Math.min(a[1],a[0]+1)});
+  d.res=res;r.ph='done';S.res.push({k:stu.o,sid:me.id,s:res,q:1});save();render();
+}
+function introHTML(){return `<div class="bx"><h2>Pronto para começar?</h2><p class="mut">${S.q[stu.o].length} questões, uma de cada vez. Se errar, a questão volta no final com números diferentes.</p><button class="btn" data-act="start">Começar</button></div>`}
+function sumHTML(r){const o=r.items.filter(i=>i.orig),f=o.filter(i=>i.ok).length;return `<div class="bx"><h2>Lição concluída!</h2><div class="row"><span class="chip">${f}/${o.length} de primeira</span><span class="chip">${r.rec} recuperada(s) na revisão</span><span class="chip">${r.xp} XP</span></div></div>`}
+function playHTML(d){
+  const r=d.run;
+  if(r.ph==='gen')return `<div class="bx"><h2>Quase lá!</h2><p>Vamos rever o que você errou, com números diferentes.</p><div class="row"><button class="btn" data-act="retryv" ${busy?'disabled':''}>Criar novas versões</button><button class="btn2" data-act="skip" ${busy?'disabled':''}>Pular revisão</button></div></div>`;
+  const it=r.items[r.pos],x=it.x,done=r.fb!==null;
+  return `<div class="row"><div class="bar"><i style="width:${Math.round(r.pos/r.items.length*100)}%"></i></div><span class="chip">Sequência ${r.streak}</span><span class="chip">${r.xp} XP</span></div><div class="bx">${it.orig?'':'<span class="chip" style="align-self:flex-start">Revisão · mesmo estilo, números novos</span>'}<h2>${esc(x.q)}</h2>${x.options.map((o,j)=>`<label class="oc ${done?(j===x.answer?'good':j===r.sel?'wrong':''):(r.sel===j?'sel':'')}"><input type="radio" name="dq" data-p="d" data-j="${j}" ${r.sel===j?'checked':''} ${done?'disabled':''}>${esc(o)}</label>`).join('')}</div>${done?`<div class="fb ${r.fb?'ok':'bad'}">${r.fb?'✓ Muito bem!':'✗ Quase! Resposta certa: '+esc(x.options[x.answer])}</div><button class="btn" data-act="next">Continuar</button>`:`<button class="btn" data-act="check" ${r.sel==null?'disabled':''}>Verificar</button>`}`;
+}
+function genRef(skill){
+  const k=stu.o;
+  run('Criando reforço…',async()=>{
+    const orig=S.q[k].filter(x=>x.skill===skill).map(x=>x.q).join(' | ');
+    const r=await ai(`Aluno do ensino público brasileiro com dificuldade na habilidade "${skill}" (${k.split('|')[1]}). Escreva uma explicação curta e acolhedora (máx. 6 frases, com um exemplo) e crie 3 questões NOVAS de múltipla escolha, diferentes destas: ${orig}. ${fmt} Formato: {"explicacao":"texto",${qfmt}}`);
+    if(!valid(r.questions))throw new Error('Resposta da IA fora do formato. Tente de novo.');
+    st().ref={skill,text:r.explicacao,qs:r.questions,ans:{},done:null};
+  });
+}
+function checkRef(){
+  const d=st(),R=d.ref,ok=R.qs.filter((x,i)=>R.ans[i]===x.answer).length;
+  R.done=ok;d.res[R.skill]=[ok,R.qs.length];S.res.push({k:stu.o,sid:me.id,s:{[R.skill]:[ok,R.qs.length]}});save();render();
+}
+function sendDoubt(){
+  const t=$('#doubt').value.trim(),s=$('#dsub').value;if(!t)return;
+  S.doubts.unshift({k:me.c+'|'+s,t,d:new Date().toLocaleDateString('pt-BR')});save();stu.sent=true;render();
+}
+function addLink(){
+  const p=$('#np').value,c=$('#nc').value,s=$('#ns').value;
+  if(S.v.some(x=>x.p===p&&x.c===c&&x.s===s)){err='Esse vínculo já existe.';return render()}
+  S.v.push({id:S.nid++,p,c,s});err='';save();render();
+}
+
+function quizHTML(qs,ans,p,lock){
+  return qs.map((x,i)=>`<div class="bx"><h3>${i+1}. ${esc(x.q)}</h3><span class="chip" style="align-self:flex-start">${esc(x.skill||'')}</span>${x.options.map((o,j)=>`<label class="opt"><input type="radio" name="${p}${i}" data-p="${p}" data-i="${i}" data-j="${j}" ${ans&&ans[i]===j?'checked':''} ${lock?'disabled':''}>${esc(o)}</label>`).join('')}</div>`).join('');
+}
+function loginView(){
+  const T=[['prof','Professor'],['alu','Aluno'],['coord','Coordenação']];
+  return `<div class="bx" style="max-width:420px;margin:30px auto;width:100%"><h1>Entrar</h1><div class="row">${T.map(([k,v])=>`<button class="tab ${lrole===k?'on':''}" data-act="role" data-k="${k}">${v}</button>`).join('')}</div><label class="mut" for="lid">${lrole==='alu'?'Matrícula':'Código de acesso'}</label><input type="text" id="lid" autocomplete="off"><label class="mut" for="lpin">PIN</label><input type="password" id="lpin" inputmode="numeric" autocomplete="off"><button class="btn" data-act="login">Entrar</button><p class="mut">Contas de teste: PROF01 · 1234 | PROF02 · 5678 | A1001 · 1111 | A1002 · 2222 | COORD · 9999</p></div>`;
+}
+function profView(off){
+  const V=S.v.filter(x=>x.p===me.id),cs=[...new Set(V.map(x=>x.c))];
+  if(!cs.length)return `<div class="bx"><h2>Sem turmas vinculadas</h2><p class="mut">A coordenação ainda não vinculou turmas e disciplinas ao seu acesso.</p></div>`;
+  if(!cs.includes(pf.c))pf.c=cs[0];
+  const ss=V.filter(x=>x.c===pf.c).map(x=>x.s);if(!ss.includes(pf.s))pf.s=ss[0];
+  const k=pf.c+'|'+pf.s,q=S.q[k],d=S.d[k],A=agg(k),ds=S.doubts.filter(x=>x.k===k);
+  let h=`<div class="bx"><div class="row">${sel('fc',cs.map(c=>[c,CL[c].n]),pf.c,'Turma')}${sel('fs',ss.map(s=>[s,s]),pf.s,'Disciplina')}</div></div>`;
+  h+=`<div class="bx"><h2>1. Planejamento da semana · ${esc(kn(k))}</h2><textarea id="plan" aria-label="Planejamento" placeholder="Cole o planejamento semanal e o conteúdo ensinado…"></textarea><button class="btn" data-act="gen" ${off}>Gerar questionário com IA</button></div>`;
+  if(d)h+=`<div class="bx"><h2>2. Revisar e aprovar</h2>${d.map((x,i)=>`<div class="row"><p class="g"><b>${i+1}.</b> ${esc(x.q)}<br><span class="mut">Gabarito: ${esc(x.options[x.answer])} · ${esc(x.skill||'')}</span></p><button class="btn2" data-act="del" data-i="${i}">Excluir</button></div>`).join('')}<div class="row"><button class="btn2" data-act="gen" ${off}>Gerar de novo</button><span class="g"></span><button class="btn" data-act="ok" ${d.length?'':'disabled'}>Aprovar e aplicar</button></div></div>`;
+  if(q)h+=`<p class="chip" style="align-self:flex-start">Questionário ativo: ${q.length} questões</p>`;
+  h+=`<div class="bx"><h2>Painel · ${esc(kn(k))}</h2><p class="mut">${A.n} aluno(s) responderam${A.p==null?'':' · domínio médio '+A.p+'%'}. Dados agregados, sem nomes.</p>${skillRows(A.a)}</div>`;
+  h+=`<div class="bx"><h2>Dúvidas anônimas</h2>${ds.length?ds.map(x=>`<p>• ${esc(x.t)} <span class="mut">(${x.d})</span></p>`).join(''):'<p class="mut">Nenhuma dúvida enviada.</p>'}</div>`;
+  return h;
+}
+function aluView(off){
+  const c=me.c,ss=[...new Set(S.v.filter(x=>x.c===c).map(x=>x.s))];
+  let h=`<p class="mut">Turma ${CL[c].n}</p>`;
+  if(!stu.o){
+    h+=`<h2>Suas disciplinas</h2>`+ss.map(s=>{const k=c+'|'+s,d=stu.D[k]||{};const t=!S.q[k]?'sem atividade':d.res?'concluída':'atividade disponível';return `<div class="bx"><div class="row"><h3 class="g">${esc(s)}</h3><span class="chip">${t}</span><button class="btn2" data-act="open" data-k="${esc(k)}" ${S.q[k]?'':'disabled'}>Abrir</button></div></div>`}).join('');
+    h+=`<div class="bx"><h2>Dúvida anônima</h2>${stu.sent?'<p class="mut">Dúvida enviada. Ninguém vê quem mandou.</p>':`<div class="row">${sel('dsub',ss.map(s=>[s,s]),ss[0],'Disciplina')}</div><textarea id="doubt" aria-label="Sua dúvida" placeholder="Escreva sua dúvida sem se identificar…"></textarea><button class="btn2" data-act="doubt">Enviar</button>`}</div>`;
+    return h;
+  }
+  const k=stu.o,d=st();
+  h+=`<div class="row"><button class="btn2" data-act="back">← Disciplinas</button><h2>${esc(k.split('|')[1])}</h2></div>`;
+  if(!d.res)h+=d.run?playHTML(d):introHTML();
+  else{
+    if(d.run)h+=sumHTML(d.run);
+    h+=`<div class="bx"><h2>Seu resultado</h2>${Object.entries(d.res).map(([sk,[a,b]])=>{const ok=a/b>=.7;return `<div class="row"><p class="g">${esc(sk)}</p><span class="chip">${a}/${b} · ${ok?'dominada':'precisa de reforço'}</span>${ok?'':`<button class="btn2" data-act="ref" data-k="${esc(sk)}" ${off}>Reforço</button>`}</div>`}).join('')}</div>`;
+    const R=d.ref;
+    if(R)h+=`<div class="bx"><h2>Reforço: ${esc(R.skill)}</h2><p>${esc(R.text)}</p></div>${quizHTML(R.qs,R.ans,'r',R.done!==null)}`+(R.done===null?`<button class="btn" data-act="chk">Verificar o que aprendi</button>`:`<div class="bx"><h3>Nova avaliação: ${R.done}/${R.qs.length}</h3><p class="mut">${R.done/R.qs.length>=.7?'Domínio alcançado! Revisões opcionais seguem disponíveis.':'Quase lá! Gere outro reforço quando quiser.'}</p></div>`);
+  }
+  return h;
+}
+function coordView(){
+  const ks=[...new Set(S.v.map(x=>x.c+'|'+x.s))].filter(k=>{const[c,s]=k.split('|');return(!cf.se||CL[c].se===cf.se)&&(!cf.c||c===cf.c)&&(!cf.s||s===cf.s)});
+  const L=ks.map(k=>{const a=agg(k),pv=PREV[k];return{k,...a,evo:a.p!=null&&pv!=null?a.p-pv:null}});
+  const w=L.filter(x=>x.p!=null),tot=L.reduce((m,x)=>m+x.n,0),avg=w.length?Math.round(w.reduce((m,x)=>m+x.p,0)/w.length):'—';
+  const crit=[];L.forEach(x=>Object.entries(x.a).forEach(([sk,[a,b]])=>{const p=b?Math.round(a/b*100):0;if(p<60)crit.push({k:x.k,sk,p})}));crit.sort((a,b)=>a.p-b.p);
+  const ses=[...new Set(Object.values(CL).map(x=>x.se))],all=['','Todas'];
+  let h=`<div class="bx"><h2>Filtros</h2><div class="row">${sel('fse',[all,...ses.map(x=>[x,x])],cf.se,'Série')}${sel('fcc',[all,...Object.keys(CL).map(c=>[c,CL[c].n])],cf.c,'Turma')}${sel('fcs',[all,...DISC.map(x=>[x,x])],cf.s,'Disciplina')}</div></div>`;
+  h+=`<div class="row"><div class="bx g"><p class="mut">Turmas × disciplinas</p><p class="kpi">${L.length}</p></div><div class="bx g"><p class="mut">Respostas</p><p class="kpi">${tot}</p></div><div class="bx g"><p class="mut">Domínio médio</p><p class="kpi">${avg}${avg==='—'?'':'%'}</p></div><div class="bx g"><p class="mut">Dúvidas anônimas</p><p class="kpi">${S.doubts.filter(x=>ks.includes(x.k)).length}</p></div></div>`;
+  const rk=[...L].sort((a,b)=>(b.evo==null)-(a.evo==null)||b.evo-a.evo);
+  h+=`<div class="bx"><h2>Ranking de evolução</h2><p class="mut">Ordenado pela evolução em relação à semana anterior, não pela nota.</p><div class="rk mut"><span>#</span><span>Turma · disciplina</span><span>Domínio</span><span>Evolução</span><span>Respostas</span></div>${rk.length?rk.map((x,i)=>`<div class="rk"><b>${i+1}</b><span>${esc(kn(x.k))}</span><span>${x.p==null?'—':x.p+'%'}</span><span class="chip" style="justify-self:start">${x.evo==null?'sem dados':(x.evo>=0?'+':'')+x.evo+' pp'}</span><span>${x.n}</span></div>`).join(''):'<p class="mut">Nada neste filtro.</p>'}</div>`;
+  h+=`<div class="bx"><h2>Habilidades que pedem atenção</h2>${crit.length?crit.slice(0,6).map(x=>`<div class="row"><p class="g">${esc(x.sk)} <span class="mut">· ${esc(kn(x.k))}</span></p><span class="chip">${x.p}% · reforçar</span></div>`).join(''):'<p class="mut">Nenhuma habilidade abaixo de 60%.</p>'}</div>`;
+  h+=L.map(x=>`<div class="bx"><h3>${esc(kn(x.k))} <span class="mut">· ${x.n} respostas</span></h3>${skillRows(x.a)}</div>`).join('');
+  const profs=U.filter(u=>u.r==='prof');
+  h+=`<div class="bx"><h2>Vínculos: professor × turma × disciplina</h2><p class="mut">O professor só enxerga o que for vinculado aqui.</p><div class="row">${sel('np',profs.map(p=>[p.id,p.name]),profs[0].id,'Professor')}${sel('nc',Object.keys(CL).map(c=>[c,CL[c].n]),'7B','Turma')}${sel('ns',DISC.map(x=>[x,x]),DISC[0],'Disciplina')}<button class="btn" data-act="addv">Adicionar</button></div>${S.v.map(x=>`<div class="row"><p class="g">${esc(pname(x.p))} · ${esc(kn(x.c+'|'+x.s))}</p><button class="btn2" data-act="delv" data-i="${x.id}" aria-label="Remover vínculo">Remover</button></div>`).join('')}</div>`;
+  h+=`<p class="mut">A coordenação vê apenas dados agregados. Nenhum nome de aluno é exibido.</p><button class="btn2" data-act="reset" style="align-self:flex-start">Zerar dados de teste</button>`;
+  return h;
+}
+function render(){
+  const off=busy?'disabled':'',keep={};
+  document.querySelectorAll('#plan,#doubt,#dsub,#np,#nc,#ns').forEach(e=>keep[e.id]=e.value);
+  let h='';
+  if(!me)h+=loginView();
+  else{
+    const role={prof:'Professor',alu:'Aluno',coord:'Coordenação'}[me.r];
+    h+=`<div class="row"><div class="g"><h1>${me.r==='coord'?'Coordenação':'Plataforma Educacional'}</h1><p class="mut">${esc(me.name)} · ${role}</p></div><button class="btn2" data-act="out">Sair</button></div>`;
+  }
+  if(busy)h+=`<p class="chip" style="align-self:flex-start">${esc(busy)}</p>`;
+  if(err)h+=`<p class="err">${esc(err)}</p>`;
+  if(me&&me.r!=='coord'&&!sample&&!hasApi())h+=`<p class="mut">A IA não está configurada: defina API_URL no código.</p>`;
+  if(me)h+=me.r==='prof'?profView(off):me.r==='alu'?aluView(off):coordView();
+  $('#app').innerHTML=h;
+  Object.entries(keep).forEach(([k,v])=>{const e=document.getElementById(k);if(e)e.value=v});
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,k=pf.c+'|'+pf.s;
+  if(a==='role'){lrole=b.dataset.k;err='';render()}
+  else if(a==='login')login();
+  else if(a==='out'){me=null;stu={D:{}};err='';render()}
+  else if(a==='gen')genQuiz(k);
+  else if(a==='del'){S.d[k].splice(+b.dataset.i,1);save();render()}
+  else if(a==='ok'){S.q[k]=S.d[k];delete S.d[k];save();render()}
+  else if(a==='open'){stu.o=b.dataset.k;render()}
+  else if(a==='back'){stu.o=null;render()}
+  else if(a==='start')startRun();
+  else if(a==='check')checkAns();
+  else if(a==='next')nextQ();
+  else if(a==='retryv')genVariants();
+  else if(a==='skip')finish();
+  else if(a==='ref')genRef(b.dataset.k);
+  else if(a==='chk')checkRef();
+  else if(a==='doubt')sendDoubt();
+  else if(a==='addv')addLink();
+  else if(a==='delv'){S.v=S.v.filter(x=>x.id!==+b.dataset.i);save();render()}
+  else if(a==='reset'){S=fresh();save();render()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='fc'){pf.c=t.value;pf.s='';render()}
+  else if(t.id==='fs'){pf.s=t.value;render()}
+  else if(t.id==='fse'){cf.se=t.value;render()}
+  else if(t.id==='fcc'){cf.c=t.value;render()}
+  else if(t.id==='fcs'){cf.s=t.value;render()}
+  else if(t.type==='radio'){const i=+t.dataset.i,j=+t.dataset.j,d=st();if(t.dataset.p==='d'){d.run.sel=j;render()}else if(d.ref)d.ref.ans[i]=j}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!me&&e.target.id==='lpin')login()});
+render();
+</script>
+</body>
+</html>
